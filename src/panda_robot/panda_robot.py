@@ -49,6 +49,10 @@ def time_in_seconds():
     time_now = rospy.Time.now()
     return time_now.secs + time_now.nsecs * 1e-9
 
+FORCE = 'force'
+POSITION = 'position'
+TORQUE = 'torque'
+ORIENTATION = 'orientation'
 
 class PandaArm(franka_interface.ArmInterface):
     """
@@ -60,6 +64,8 @@ class PandaArm(franka_interface.ArmInterface):
         :param reset_frames: if True, EE frame is reset to nominal end-effector frame using using :py:class:`franka_interface.ArmInterface` and :py:class:`franka_tools.FrankaFramesInterface`.
 
     """
+    
+    
 
     def __init__(self, on_state_callback=None, reset_frames=True):
         """
@@ -71,6 +77,7 @@ class PandaArm(franka_interface.ArmInterface):
         """
 
         self._logger = logging.getLogger(__name__)
+        
 
         # ----- don't update robot state value in this class until robot is fully configured
         self._arm_configured = False
@@ -135,22 +142,22 @@ class PandaArm(franka_interface.ArmInterface):
         else:
             # match the kinematics end-effector with the libfranka-defined EE by adding segments to kdl chain
             if self.has_gripper:
-                ee_frame_name = self.name + "_EE"
-                F_T_NE = np.asarray(self._F_T_NE).reshape(4, 4, order="F")
-                NE_T_EE = np.asarray(self._NE_T_EE).reshape(4, 4, order="F")
+                ee_frame_name = self.name + '_EE'
+                F_T_NE = np.asarray(self._F_T_NE).reshape(4, 4, order='F')
+                NE_T_EE = np.asarray(self._NE_T_EE).reshape(4, 4, order='F')
                 ee_conf = [{
-                    "child_name": self.name+"_NE",
-                    "origin_pos": F_T_NE[:3, 3],
-                    "origin_ori":F_T_NE[:3, :3],
-                    "joint_name":"fixed_NE_jnt",
-                    "parent_name":self.name+"_link8"
+                    'child_name': self.name+'_NE',
+                    'origin_pos': F_T_NE[:3, 3],
+                    'origin_ori':F_T_NE[:3, :3],
+                    'joint_name':'fixed_NE_jnt',
+                    'parent_name':self.name+'_link8'
                 },
                     {
-                    "child_name": self.name+"_EE",
-                    "origin_pos": NE_T_EE[:3, 3],
-                    "origin_ori":NE_T_EE[:3, :3],
-                    "joint_name":"fixed_EE_jnt",
-                    "parent_name":self.name+"_NE"
+                    'child_name': self.name+'_EE',
+                    'origin_pos': NE_T_EE[:3, 3],
+                    'origin_ori':NE_T_EE[:3, :3],
+                    'joint_name':'fixed_EE_jnt',
+                    'parent_name':self.name+'_NE'
                 }
                 ]
                 self._kinematics = PandaKinematics(
@@ -213,7 +220,7 @@ class PandaArm(franka_interface.ArmInterface):
         gripper_state = {}
 
         if self._gripper:
-            gripper_state['position'] = self._gripper.joint_ordered_positions()
+            gripper_state[POSITION] = self._gripper.joint_ordered_positions()
             gripper_state['force'] = self._gripper.joint_ordered_efforts()
 
         return gripper_state
@@ -227,19 +234,21 @@ class PandaArm(franka_interface.ArmInterface):
         """
         if self._gripper:
             self._gripper.set_velocity(speed)
+            
+
 
     def _update_tip_state(self, tipstate_msg):
         tip_state = {}
 
         time = tipstate_msg.timestamp
-        tip_state['position'] = tipstate_msg.pose['position']
-        ori = tipstate_msg.pose['orientation']
-        force = tipstate_msg.effort['force']
-        torque = tipstate_msg.effort['torque']
-        tip_state['force_K'] = -tipstate_msg.effort_in_K_frame['force']
-        tip_state['torque_K'] = -tipstate_msg.effort_in_K_frame['torque']
+        tip_state[POSITION] = tipstate_msg.pose[POSITION]
+        ori = tipstate_msg.pose[ORIENTATION]
+        force = tipstate_msg.effort[FORCE]
+        torque = tipstate_msg.effort[TORQUE]
+        tip_state['force_K'] = -tipstate_msg.effort_in_K_frame[FORCE]
+        tip_state['torque_K'] = -tipstate_msg.effort_in_K_frame[TORQUE]
 
-        tip_state['orientation'] = np.asarray([ori.w, ori.x, ori.y, ori.z])
+        tip_state[ORIENTATION] = np.asarray([ori.w, ori.x, ori.y, ori.z])
         tip_state['linear_vel'] = tipstate_msg.velocity['linear']
         tip_state['angular_vel'] = tipstate_msg.velocity['angular']
         tip_state['time'] = {'secs': time.secs, 'nsecs': time.nsecs}
@@ -252,8 +261,8 @@ class PandaArm(franka_interface.ArmInterface):
         #     tip_state['torque'] = np.dot(rotation_mat, np.asarray(
         #         [-torque[0], -torque[1], -torque[2]]))
         # else:
-        tip_state['force'] = np.asarray([-force[0], -force[1], -force[2]])
-        tip_state['torque'] = np.asarray(
+        tip_state[FORCE] = np.asarray([-force[0], -force[1], -force[2]])
+        tip_state[TORQUE] = np.asarray(
             [-torque[0], -torque[1], -torque[2]])
         # tip_state['valid'] = True
         self._tip_state = copy.deepcopy(tip_state)
@@ -275,7 +284,7 @@ class PandaArm(franka_interface.ArmInterface):
             return [ls[n] for n in self.joint_names()]
 
         state = {}
-        state['position'] = self.angles()
+        state[POSITION] = self.angles()
         state['velocity'] = self.velocities()
         state['effort'] = np.array(to_list(self.joint_efforts()))
         state['jacobian'] = self.jacobian(None)
@@ -526,7 +535,7 @@ class PandaArm(franka_interface.ArmInterface):
         :return: end-effector pose as position and quaternion in global frame
         :rtype: np.ndarray (pose), np.quaternion (orientation)
         """
-        ee_point = np.asarray(self.endpoint_pose()['position'])
+        ee_point = np.asarray(self.endpoint_pose()[POSITION])
 
         ee_ori = self.endpoint_pose()['orientation']
         ee_ori = np.quaternion(ee_ori.w, ee_ori.x, ee_ori.y, ee_ori.z)
