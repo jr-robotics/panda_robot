@@ -10,20 +10,20 @@ if __name__ == '__main__':
     rospy.init_node('test')
     panda_arm = PandaArm(reset_frames=False)
 
-    angles = panda_arm.joint_angles()
+    joint_angles = panda_arm.joint_angles()
 
-    names = panda_arm.joint_names()
+    joint_names = panda_arm.joint_names()
 
-    vals = [0.000, -0.785, 0.0, -1.9,
+    joint_values = [0.000, -0.785, 0.0, -1.9,
             0.0, 1.57, 0.785]
 
-    def convert_to_dict(val):
+    def convert_to_dict(values):
         retval = {}
-        for n, name in enumerate(names):
-            retval[name] = val[n]
+        for n, name in enumerate(joint_names):
+            retval[name] = values[n]
         return retval
 
-    def sendto(values):
+    def send_to(values):
         panda_arm.move_to_joint_positions(convert_to_dict(values))
 
         print('err: {}'.format(np.asarray(values) -
