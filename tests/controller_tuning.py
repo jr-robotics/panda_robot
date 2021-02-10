@@ -9,16 +9,15 @@ from copy import deepcopy
 
 vals = []
 vels = []
-names = ['panda_joint1','panda_joint2','panda_joint3','panda_joint4','panda_joint5','panda_joint6','panda_joint7']
+names = ['panda_joint1', 'panda_joint2', 'panda_joint3',
+         'panda_joint4', 'panda_joint5', 'panda_joint6', 'panda_joint7']
 
 if __name__ == '__main__':
 
-
-    rospy.init_node("test_node", disable_signals = True)
+    rospy.init_node('test_node', disable_signals=True)
     r = PandaArm()
 
     rate = rospy.Rate(100)
-
 
     # while len(vals) != 7 and not rospy.is_shutdown():
     #     continue
@@ -31,14 +30,14 @@ if __name__ == '__main__':
 
     r.move_to_neutral()
 
-    raw_input("Hit Enter to Start")
+    raw_input('Hit Enter to Start')
     joints = r.angles()
 
     limits = r.joint_limits()
 
     lower_lim = limits[0]['lower']/4
     upper_lim = limits[0]['upper']/4
-    print "commanding"
+    print('commanding')
 
     speed = 10
 
@@ -50,7 +49,8 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
 
-        joints[0] = np.sin((rospy.Time().now().to_sec() - start_time)/100.0 * speed)*diff + offset
+        joints[0] = np.sin((rospy.Time().now().to_sec() -
+                            start_time)/100.0 * speed)*diff + offset
 
         r.set_joint_positions_velocities(joints, r.velocities())
 

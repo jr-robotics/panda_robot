@@ -8,19 +8,14 @@ import numpy as np
 if __name__ == '__main__':
 
     rospy.init_node('test')
-    r = PandaArm(reset_frames = False)
+    panda_arm = PandaArm(reset_frames=False)
 
-    angles = r.joint_angles()
+    angles = panda_arm.joint_angles()
 
-    names = r.joint_names()
+    names = panda_arm.joint_names()
 
-    vals = [0.000,
-            -0.785,
-            0.0,
-            -1.9,
-            0.0,
-            1.57,
-            0.785]
+    vals = [0.000, -0.785, 0.0, -1.9,
+            0.0, 1.57, 0.785]
 
     def convert_to_dict(val):
         retval = {}
@@ -29,11 +24,12 @@ if __name__ == '__main__':
         return retval
 
     def sendto(values):
-        r.move_to_joint_positions(convert_to_dict(values))
+        panda_arm.move_to_joint_positions(convert_to_dict(values))
 
-        print "err" , np.asarray(values) - np.asarray(r.joint_ordered_angles())
+        print('err: {}'.format(np.asarray(values) -
+                               np.asarray(panda_arm.joint_ordered_angles())))
 
-    cm = r.get_controller_manager()
+    cm = panda_arm.get_controller_manager()
 
     cms = cm.stop_controller
     cmstart = cm.start_controller

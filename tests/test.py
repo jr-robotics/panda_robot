@@ -7,44 +7,47 @@ from panda_robot import PandaArm
 # from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import WrenchStamped
 
+FORCE = 'force'
+TORQUE = 'torque'
 
 if __name__ == '__main__':
-    
+
     rospy.init_node('test')
-    r = PandaArm()
+    panda_arm = PandaArm()
 
     wrench1 = WrenchStamped()
-    wrench1.header.frame_id = "panda_link0"
+    wrench1.header.frame_id = 'panda_link0'
 
-    wrench_pub = rospy.Publisher("ee_wrench", WrenchStamped, queue_size = 1)
+    wrench_pub = rospy.Publisher('ee_wrench', WrenchStamped, queue_size=1)
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        if not r.in_safe_state():
-            print r.get_robot_status()
-            if r.error_in_current_state():
-                print r.what_errors()
+        if not panda_arm.in_safe_state():
+            print(panda_arm.get_robot_status())
+            if panda_arm.error_in_current_state():
+                print(panda_arm.what_errors())
             break
-        print "-----------------"
-        print ""
         
-        print ""
-        wrench = r.tip_state()
+        print('-----------------')
+        print('')
+
+        print('')
+        wrench = panda_arm.tip_state()
 
         wrench1.header.stamp = rospy.Time.now()
-        wrench1.wrench.force.x = wrench['force'][0]
-        wrench1.wrench.force.y = wrench['force'][1]
-        wrench1.wrench.force.z = wrench['force'][2]
+        wrench1.wrench.force.x = wrench[FORCE][0]
+        wrench1.wrench.force.y = wrench[FORCE][1]
+        wrench1.wrench.force.z = wrench[FORCE][2]
 
-        wrench1.wrench.torque.x = wrench['torque'][0]
-        wrench1.wrench.torque.y = wrench['torque'][1]
-        wrench1.wrench.torque.z = wrench['torque'][2]
+        wrench1.wrench.torque.x = wrench[TORQUE][0]
+        wrench1.wrench.torque.y = wrench[TORQUE][1]
+        wrench1.wrench.torque.z = wrench[TORQUE][2]
 
         wrench_pub.publish(wrench1)
 
-        print "-----------------"
+        print('-----------------')
 
-        print "-----------------"
-        print "-----------------"
+        print('-----------------')
+        print('-----------------')
 
         rate.sleep()
